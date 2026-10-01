@@ -280,3 +280,12 @@ else:
     st.error(
         f"Impossible de récupérer les données pour le symbole '{ticker_input}'. Vérifiez le ticker."
     )
+# Avertissement Légal / Disclaimer
+st.markdown("---")
+st.caption(
+    "⚠️ **Avertissement de responsabilité** : L'IA Kouhen FinTech et les signaux d'analyse fournis "
+    "sur cette application sont transmis à titre purement informatif et éducatif. "
+    "Ils n'incitent ni à acheter ni à vendre des instruments financiers. "
+    "Les investissements sur les marchés comportent des risques de perte en capital. "
+    "Consultez un professionnel de la finance agréé avant toute décision d'investissement."
+)
