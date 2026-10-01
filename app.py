@@ -225,32 +225,33 @@ if data is not None and not data.empty:
     col1, col2, col3 = st.columns(3)
     col1.metric("Prix Actuel", f"{last_price:.2f} $")
     col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} $")
-    col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} $")
+   col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} $")
 
-  st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
-st.line_chart(data[["Close", "MA50", "MA200"]])
+    # Graphique
+    st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
+    st.line_chart(data[["Close", "MA50", "MA200"]])
 
-capital = st.number_input("💰 Votre capital / budget à investir ($) :", min_value=10, value=1000, step=50)
+    capital = st.number_input("💰 Votre capital / budget à investir ($) :", min_value=10, value=1000, step=50)
 
-# Module de recommandation IA
-st.subheader("🤖 Recommandation de l'Algorithme IA")
+    # Module de recommandation IA
+    st.subheader("🤖 Recommandation de l'Algorithme IA")
 
-if last_price > last_ma50 and last_ma50 > last_ma200:
-    signal = "🟢 ACHETER / CONSERVER"
-    explanation = (
-        "L'action est en forte tendance haussière (Prix > MA50 > MA200)."
-    )
-elif last_price < last_ma50:
-    signal = "🔴 VENDRE / ALLÉGER"
-    explanation = (
-        "Le prix est repassé sous la moyenne à 50 jours. Signal d'alerte."
-    )
-else:
-    signal = "🟠 NEUTRE"
-    explanation = "Pas de tendance claire détectée pour le moment."
+    if last_price > last_ma50 and last_ma50 > last_ma200:
+        signal = "🟢 ACHETER / CONSERVER"
+        explanation = (
+            "L'action est en forte tendance haussière (Prix > MA50 > MA200)."
+        )
+    elif last_price < last_ma50:
+        signal = "🔴 VENDRE / ALLÉGER"
+        explanation = (
+            "Le prix est repassé sous la moyenne à 50 jours. Signal d'alerte."
+        )
+    else:
+        signal = "🟠 NEUTRE"
+        explanation = "Pas de tendance claire détectée pour le moment."
 
-st.markdown(f"**Signal :** `{signal}`")
-st.write(explanation)
+    st.markdown(f"**Signal :** `{signal}`")
+    st.write(explanation)
     # Section exclusive PRO : Arbitrage
     st.markdown("---")
     st.subheader("🔄 Module d'Arbitrage & Opportunités de Réinvestissement")
