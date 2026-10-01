@@ -6,6 +6,8 @@ import pandas as pd
 import streamlit as st
 import stripe
 import yfinance as yf
+import datetime
+import pytz
 
 # ==========================================
 # 1. CONFIGURATION STRIPE & SECRETS
@@ -218,7 +220,49 @@ if data is not None and not data.empty:
     data["MA50"] = data["Close"].rolling(window=50).mean()
     data["MA200"] = data["Close"].rolling(window=200).mean()
 
-   # Récupération du prix en temps réel et des moyennes mobiles
+   # 1. Détection de la devise dynamique
+    if ticker_input.endswith(".MA"):
+        currency = "DH"
+    elif ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
+        currency = "€"
+    else:
+        currency = "$"
+
+    # 2. Statut du marché et compte à rebours
+    try:
+        market_tz_str = ticker.fast_info.get('timezone', 'UTC')
+        market_tz = pytz.timezone(market_tz_str)
+        now_market = datetime.datetime.now(market_tz)
+        
+        is_weekend = now_market.weekday() >= 5
+        
+        if ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
+            open_time = now_market.replace(hour=9, minute=0, second=0, microsecond=0)
+            close_time = now_market.replace(hour=17, minute=30, second=0, microsecond=0)
+        else:
+            open_time = now_market.replace(hour=9, minute=30, second=0, microsecond=0)
+            close_time = now_market.replace(hour=16, minute=0, second=0, microsecond=0)
+
+        is_open = (not is_weekend) and (open_time <= now_market <= close_time)
+
+        if is_open:
+            st.success(f"🟢 **Marché Ouvert** ({market_tz_str})")
+        else:
+            next_open = open_time
+            if now_market > close_time:
+                next_open += datetime.timedelta(days=1)
+            while next_open.weekday() >= 5:
+                next_open += datetime.timedelta(days=1)
+                
+            time_left = next_open - now_market
+            hours, remainder = divmod(int(time_left.total_seconds()), 3600)
+            minutes, _ = divmod(remainder, 60)
+            
+            st.warning(f"🔴 **Marché Fermé** | Réouverture dans environ **{hours}h {minutes}min**")
+    except:
+        pass
+
+    # 3. Récupération du prix en direct et des moyennes mobiles
     try:
         last_price = float(ticker.fast_info['lastPrice'])
     except:
@@ -228,9 +272,9 @@ if data is not None and not data.empty:
     last_ma200 = float(data["MA200"].dropna().iloc[-1])
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Prix Actuel", f"{last_price:.2f} $")
-    col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} $")
-    col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} $")
+   col1.metric("Prix Actuel", f"{last_price:.2f} {currency}")
+   col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} {currency}")
+   col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}")
 
     # Graphique
     st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
