@@ -226,48 +226,51 @@ if data is not None and not data.empty:
     elif ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
         currency = "€"
     else:
-        currency = "$"
-
-    # 2. Statut du marché et compte à rebours
+# 2. Statut du marché et compte à rebours (sans pytz)
     try:
-        market_tz_str = ticker.fast_info.get('timezone', 'UTC')
-        market_tz = pytz.timezone(market_tz_str)
-        now_market = datetime.datetime.now(market_tz)
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
         
-        is_weekend = now_market.weekday() >= 5
-        
+        # Sélection des horaires selon le marché
         if ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
-            open_time = now_market.replace(hour=9, minute=0, second=0, microsecond=0)
-            close_time = now_market.replace(hour=17, minute=30, second=0, microsecond=0)
+            # Bourses européennes (UTC+2 en heure d'été) : 07:00 UTC à 15:30 UTC
+            open_hour, close_hour = 7, 15
+            close_minute = 30
+            tz_label = "Europe/Paris/Berlin"
         else:
-            open_time = now_market.replace(hour=9, minute=30, second=0, microsecond=0)
-            close_time = now_market.replace(hour=16, minute=0, second=0, microsecond=0)
+            # US (UTC-4 en heure d'été) : 13:30 UTC à 20:00 UTC
+            open_hour, close_hour = 13, 20
+            close_minute = 0
+            tz_label = "US/Eastern"
 
-        is_open = (not is_weekend) and (open_time <= now_market <= close_time)
+        is_weekend = now_utc.weekday() >= 5
+        
+        open_time = now_utc.replace(hour=open_hour, minute=30 if open_hour == 13 else 0, second=0, microsecond=0)
+        close_time = now_utc.replace(hour=close_hour, minute=close_minute, second=0, microsecond=0)
+
+        is_open = (not is_weekend) and (open_time <= now_utc <= close_time)
 
         if is_open:
-            st.success(f"🟢 **Marché Ouvert** ({market_tz_str})")
+            st.success(f"🟢 **Marché Ouvert** ({tz_label})")
         else:
             next_open = open_time
-            if now_market > close_time:
+            if now_utc > close_time:
                 next_open += datetime.timedelta(days=1)
             while next_open.weekday() >= 5:
                 next_open += datetime.timedelta(days=1)
                 
-            time_left = next_open - now_market
+            time_left = next_open - now_utc
             hours, remainder = divmod(int(time_left.total_seconds()), 3600)
             minutes, _ = divmod(remainder, 60)
             
             st.warning(f"🔴 **Marché Fermé** | Réouverture dans environ **{hours}h {minutes}min**")
-    except:
-        pass
+    except Exception as e:
+        st.error(f"Erreur marché : {e}")
 
-    # 3. Récupération du prix en direct et des moyennes mobiles
+    # 3. Récupération du prix en direct
     try:
         last_price = float(ticker.fast_info['lastPrice'])
     except:
         last_price = float(data["Close"].dropna().iloc[-1])
-
     last_ma50 = float(data["MA50"].dropna().iloc[-1])
     last_ma200 = float(data["MA200"].dropna().iloc[-1])
 
