@@ -261,13 +261,25 @@ if data is not None and not data.empty:
             " souhaitez réallouer votre capital, l'IA suggère actuellement de"
             " surveiller les paires à forte croissance sectorielle."
         )
+       # Score et conseil d'arbitrage dynamiques
+        if "ACHETER" in signal:
+            score = "8.8/10"
+            alt = "Titre solide (Aucune alternative requise)"
+            conseil = "Maintenir 100% de la position (Tendance haussière forte)."
+        elif "VENDRE" in signal:
+            score = "3.5/10"
+            alt = "NVDA" if ticker_input.upper() != "NVDA" else "MSFT"
+            conseil = "Alléger 50% à 100% et réallouer le capital vers des leaders du secteur."
+        else:
+            score = "5.5/10"
+            alt = "SPY (Indice S&P 500)"
+            conseil = "Conserver la position actuelle et attendre un signal de cassure clair."
+
         st.json({
             "Action analysée": ticker_input.upper(),
-            "Score de croissance IA": "8.4/10",
-            "Alternative suggérée (Plus fort momentum)": "NVDA",
-            "Conseil d'arbitrage": (
-                "Conserver 70%, Arbitrer 30% vers le secteur IA / Tech."
-            ),
+            "Score de croissance IA": score,
+            "Alternative suggérée (Plus fort momentum)": alt,
+            "Conseil d'arbitrage": conseil
         })
     else:
         st.warning(
