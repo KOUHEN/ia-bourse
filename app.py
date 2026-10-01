@@ -271,10 +271,10 @@ if data is not None and not data.empty:
     last_ma50 = float(data["MA50"].dropna().iloc[-1])
     last_ma200 = float(data["MA200"].dropna().iloc[-1])
 
-   col1, col2, col3 = st.columns(3)
-   col1.metric("Prix Actuel", f"{last_price:.2f} {currency}")
-   col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} {currency}")
-   col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Prix Actuel", f"{last_price:.2f} {currency}")
+    col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} {currency}")
+    col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}")
 
     # Graphique
     st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
