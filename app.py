@@ -287,37 +287,68 @@ if data is not None and not data.empty:
 
     capital = st.number_input("💰 Votre capital / budget à investir ($) :", min_value=10, value=1000, step=50)
 
-    # Module de recommandation IA
-    st.subheader("🤖 Recommandation de l'Algorithme IA")
+   # Module de recommandation IA
+st.subheader("🤖 Recommandation de l'Algorithme IA")
 
-    if last_price > last_ma50 and last_ma50 > last_ma200:
-        signal = "🟢 ACHETER / CONSERVER"
-        explanation = (
-            "L'action est en forte tendance haussière (Prix > MA50 > MA200)."
-        )
-    elif last_price < last_ma50:
-        signal = "🔴 VENDRE / ALLÉGER"
-        explanation = (
-            "Le prix est repassé sous la moyenne à 50 jours. Signal d'alerte."
-        )
+# 1. Analyse technique du ticker sélectionné
+if last_price > last_ma50 and last_ma50 > last_ma200:
+    signal = "🟢 ACHETER / CONSERVER"
+    explanation = f"Tendances très positives pour {ticker_input.upper()} : le prix ({last_price:.2f} {currency}) est au-dessus des moyennes mobiles à 50 et 200 jours (signal haussier puissant)."
+elif last_price < last_ma50 and last_ma50 < last_ma200:
+    signal = "🔴 VENDRE / ALLÉGER"
+    explanation = f"Tendances baissières pour {ticker_input.upper()} : le prix actuel est en dessous de ses moyennes mobiles 50j et 200j."
+else:
+    signal = "🟠 NEUTRE / CONSOLIDATION"
+    explanation = f"Signal mitigé pour {ticker_input.upper()} : le cours évolue entre ses moyennes mobiles à 50 et 200 jours."
+
+st.markdown(f"**Signal pour {ticker_input.upper()} :** {signal}")
+st.caption(explanation)
+
+st.markdown("---")
+
+# 2. Suggérer 3 stratégies basées sur le capital disponible
+st.subheader("💡 Suggestions d'allocation intelligente")
+
+# Calcul du nombre d'actions entières possibles pour l'action analysée
+nb_actions_entieres = int(capital // last_price) if last_price > 0 else 0
+
+# Liste de tickers de référence selon la devise
+if currency == "€":
+    cheap_alt_name = "Airbus (AIR.PA)"
+    premium_alt_name = "ASML (ASML.AS)"
+    premium_price_est = 750.0
+elif currency == "DH":
+    cheap_alt_name = "Attijariwafa Bank"
+    premium_alt_name = "BCP"
+    premium_price_est = 300.0
+else:
+    cheap_alt_name = "Apple (AAPL)"
+    premium_alt_name = "Nvidia (NVDA)"
+    premium_price_est = 130.0
+
+col_rec1, col_rec2, col_rec3 = st.columns(3)
+
+# Option 1 : Action sélectionnée
+with col_rec1:
+    st.markdown("### 1. Actif Sélectionné")
+    if nb_actions_entieres >= 1:
+        cout_total = nb_actions_entieres * last_price
+        reste = capital - cout_total
+        st.success(f"**Achat direct**\n\n- **{nb_actions_entieres}** action(s) de **{ticker_input.upper()}**\n- Coût : **{cout_total:.2f} {currency}**\n- Reste : **{reste:.2f} {currency}**")
     else:
-        signal = "🟠 NEUTRE"
-        explanation = "Pas de tendance claire détectée pour le moment."
+        fraction = capital / last_price if last_price > 0 else 0
+        st.info(f"**Achat fractionné**\n\nLe prix ({last_price:.2f} {currency}) dépasse votre budget.\n- Vous pouvez acheter **{fraction:.2f}** action de {ticker_input.upper()}.")
 
-    st.markdown(f"**Signal :** `{signal}`")
-    st.write(explanation)
-    # Section exclusive PRO : Arbitrage
-    st.markdown("---")
-    st.subheader("🔄 Module d'Arbitrage & Opportunités de Réinvestissement")
+# Option 2 : Alternative dans le budget
+with col_rec2:
+    st.markdown("### 2. Option Diversification")
+    st.success(f"**Achat direct**\n\n- Suggéré : **{cheap_alt_name}**\n- Accessible avec votre capital de **{capital:.0f} {currency}**.")
 
-    if user_is_pro:
-        st.success(
-            " Analyse d'Arbitrage Débloquée : Si vous possédez ce titre et"
-            " souhaitez réallouer votre capital, l'IA suggère actuellement de"
-            " surveiller les paires à forte croissance sectorielle."
-        )
-# Score et conseil d'arbitrage dynamiques adaptés au budget
-        nb_actions = int(capital // last_price) if last_price > 0 else 0
+# Option 3 : Achat fractionné
+with col_rec3:
+    st.markdown("### 3. Achat Fractionné")
+    ratio_fraction = capital / premium_price_est
+    st.warning(f"**Fraction d'action**\n\n- Suggéré : **{premium_alt_name}**\n- Avec votre budget, vous obtenez **{ratio_fraction:.3f}** action.\n- Idéal pour investir sur de grands titres.")
 
         if "ACHETER" in signal:
             score = "8.8/10"
