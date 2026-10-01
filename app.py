@@ -232,8 +232,8 @@ if data is not None and not data.empty:
     st.line_chart(data[["Close", "MA50", "MA200"]])
 capital = st.number_input("💰 Votre capital / budget à investir ($) :", min_value=10, value=1000, step=50)
 
-# Module de recommandation IA
-st.subheader("🤖 Recommandation de l'Algorithme IA")
+    # Module de recommandation IA
+    st.subheader("🤖 Recommandation de l'Algorithme IA")
 
     if last_price > last_ma50 and last_ma50 > last_ma200:
         signal = "🟢 ACHETER / CONSERVER"
