@@ -230,7 +230,7 @@ if data is not None and not data.empty:
     # Graphique
     st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
     st.line_chart(data[["Close", "MA50", "MA200"]])
-
+capital = st.number_input("💰 Votre capital / budget à investir ($) :", min_value=10, value=1000, step=50)
     # Module de recommandation IA
     st.subheader("🤖 Recommandation de l'Algorithme IA")
 
@@ -261,19 +261,27 @@ if data is not None and not data.empty:
             " souhaitez réallouer votre capital, l'IA suggère actuellement de"
             " surveiller les paires à forte croissance sectorielle."
         )
-       # Score et conseil d'arbitrage dynamiques
+# Score et conseil d'arbitrage dynamiques adaptés au budget
+        nb_actions = int(capital // last_price) if last_price > 0 else 0
+
         if "ACHETER" in signal:
             score = "8.8/10"
             alt = "Titre solide (Aucune alternative requise)"
-            conseil = "Maintenir 100% de la position (Tendance haussière forte)."
+            if nb_actions > 0:
+                conseil = f"Acheter environ {nb_actions} action(s) de {ticker_input.upper()} avec vos {capital}$."
+            else:
+                conseil = f"Votre budget ({capital}$) est inférieur au prix d'une action ({last_price:.2f}$). Utilisez les fractions d'actions."
+
         elif "VENDRE" in signal:
             score = "3.5/10"
             alt = "NVDA" if ticker_input.upper() != "NVDA" else "MSFT"
-            conseil = "Alléger 50% à 100% et réallouer le capital vers des leaders du secteur."
+            montant_arbitrage = round(capital * 0.5, 2)
+            conseil = f"Alléger la position et réallouer {montant_arbitrage}$ vers {alt}."
+
         else:
             score = "5.5/10"
             alt = "SPY (Indice S&P 500)"
-            conseil = "Conserver la position actuelle et attendre un signal de cassure clair."
+            conseil = f"Garder vos {capital}$ en liquidités en attente d'un signal plus clair."
 
         st.json({
             "Action analysée": ticker_input.upper(),
