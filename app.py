@@ -225,7 +225,7 @@ if data is not None and not data.empty:
     col1, col2, col3 = st.columns(3)
     col1.metric("Prix Actuel", f"{last_price:.2f} $")
     col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} $")
-   col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} $")
+    col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} $")
 
     # Graphique
     st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
