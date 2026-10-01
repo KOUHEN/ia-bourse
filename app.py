@@ -220,12 +220,12 @@ if data is not None and not data.empty:
     data["MA50"] = data["Close"].rolling(window=50).mean()
     data["MA200"] = data["Close"].rolling(window=200).mean()
 
-   # 1. Détection de la devise dynamique
+# 1. Détection de la devise dynamique
     if ticker_input.endswith(".MA"):
         currency = "DH"
     elif ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
         currency = "€"
-  else:
+    else:
         currency = "$"
 
     # 2. Statut du marché et compte à rebours (sans pytz)
