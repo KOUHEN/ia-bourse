@@ -218,7 +218,12 @@ if data is not None and not data.empty:
     data["MA50"] = data["Close"].rolling(window=50).mean()
     data["MA200"] = data["Close"].rolling(window=200).mean()
 
-    last_price = float(data["Close"].dropna().iloc[-1])
+   # Récupération du prix en temps réel et des moyennes mobiles
+    try:
+        last_price = float(ticker.fast_info['lastPrice'])
+    except:
+        last_price = float(data["Close"].dropna().iloc[-1])
+
     last_ma50 = float(data["MA50"].dropna().iloc[-1])
     last_ma200 = float(data["MA200"].dropna().iloc[-1])
 
