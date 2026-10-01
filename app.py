@@ -218,9 +218,9 @@ if data is not None and not data.empty:
     data["MA50"] = data["Close"].rolling(window=50).mean()
     data["MA200"] = data["Close"].rolling(window=200).mean()
 
-    last_price = float(data["Close"].iloc[-1])
-    last_ma50 = float(data["MA50"].iloc[-1])
-    last_ma200 = float(data["MA200"].iloc[-1])
+    last_price = float(data["Close"].dropna().iloc[-1])
+    last_ma50 = float(data["MA50"].dropna().iloc[-1])
+    last_ma200 = float(data["MA200"].dropna().iloc[-1])
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Prix Actuel", f"{last_price:.2f} $")
