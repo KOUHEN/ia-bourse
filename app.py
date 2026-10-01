@@ -47,7 +47,6 @@ def create_stripe_checkout_session(user_email):
     try:
         checkout_session = stripe.checkout.Session.create(
             customer_email=user_email,
-            payment_method_types=["card"],
             line_items=[{
                 "price_data": {
                     "currency": "usd",
@@ -58,7 +57,7 @@ def create_stripe_checkout_session(user_email):
                             " d'arbitrage et alertes."
                         ),
                     },
-                    "unit_amount": 999,  # 9.99 $ en centimes
+                    "unit_amount": 999,
                     "recurring": {"interval": "month"},
                 },
                 "quantity": 1,
@@ -72,7 +71,6 @@ def create_stripe_checkout_session(user_email):
     except Exception as e:
         st.error(f"Erreur de communication avec Stripe : {e}")
         return None
-
 
 # ==========================================
 # 4. CONFIGURATION DE LA PAGE STREAMLIT
