@@ -225,8 +225,10 @@ if data is not None and not data.empty:
         currency = "DH"
     elif ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
         currency = "€"
-    else:
-# 2. Statut du marché et compte à rebours (sans pytz)
+  else:
+        currency = "$"
+
+    # 2. Statut du marché et compte à rebours (sans pytz)
     try:
         now_utc = datetime.datetime.now(datetime.timezone.utc)
         
