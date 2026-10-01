@@ -11,11 +11,9 @@ import yfinance as yf
 # 1. CONFIGURATION STRIPE & SECRETS
 # ==========================================
 # Récupération de la clé Stripe (depuis st.secrets ou fallback pour le test local)
-STRIPE_SECRET_KEY = st.secrets.get(
-    "STRIPE_SECRET_KEY", "sk_test_51...VOTRE_CLE_SECRETE_ICI"
-)
-stripe.api_key = STRIPE_SECRET_KEY
-
+raw_key = str(st.secrets.get("STRIPE_SECRET_KEY", ""))
+clean_key = raw_key.strip().replace("\n", "").replace("\r", "").replace(" ", "")
+stripe.api_key = clean_key
 # URL de ton site (mise à jour automatiquement sur Streamlit Cloud)
 APP_URL = st.secrets.get("APP_URL", "http://localhost:8501")
 
