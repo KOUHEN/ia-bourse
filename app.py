@@ -8,8 +8,7 @@ import stripe
 import yfinance as yf
 import pytz
 import sqlite3
-import datetime as dt
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
@@ -298,32 +297,31 @@ if data is not None and not data.empty:
         currency = "$"
 
     # 2. Statut du marché et compte à rebours (sans pytz)
-    try:
-        now_utc = datetime.now(datetime.timezone.utc)
-        
-        # Sélection des horaires selon le marché
-        if ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
-            # Bourses européennes (UTC+2 en heure d'été) : 07:00 UTC à 15:30 UTC
-            open_hour, close_hour = 7, 15
-            close_minute = 30
-            tz_label = "Europe/Paris/Berlin"
-        else:
-            # US (UTC-4 en heure d'été) : 13:30 UTC à 20:00 UTC
-            open_hour, close_hour = 13, 20
-            close_minute = 0
-            tz_label = "US/Eastern"
+ try:
+    now_utc = datetime.now(timezone.utc)
+    # Sélection des horaires selon le marché
+    if ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
+        # Bourses européennes (UTC+2 en heure d'été) : 07:00 UTC à 15:30 UTC
+        open_hour, close_hour = 7, 15
+        close_minute = 30
+        tz_label = "Europe/Paris/Berlin"
+    else:
+        # US (UTC-4 en heure d'été) : 13:30 UTC à 20:00 UTC
+        open_hour, close_hour = 13, 20
+        close_minute = 0
+        tz_label = "US/Eastern"
 
-        is_weekend = now_utc.weekday() >= 5
-        
-        open_time = now_utc.replace(hour=open_hour, minute=30 if open_hour == 13 else 0, second=0, microsecond=0)
-        close_time = now_utc.replace(hour=close_hour, minute=close_minute, second=0, microsecond=0)
+    is_weekend = now_utc.weekday() >= 5
 
-        is_open = (not is_weekend) and (open_time <= now_utc <= close_time)
+    open_time = now_utc.replace(hour=open_hour, minute=30 if open_hour == 13 else 0, second=0, microsecond=0)
+    close_time = now_utc.replace(hour=open_hour, minute=close_minute, second=0, microsecond=0)
 
-        if is_open:
-            st.success(f"🟢 **Marché Ouvert** ({tz_label})")
-        else:
-            next_open = open_time
+    is_open = (not is_weekend) and (open_time <= now_utc <= close_time)
+
+    if is_open:
+        st.success(f"🟢 **Marché Ouvert** ({tz_label})")
+    else:
+        next_open = open_time
             if now_utc > close_time:
                 next_open += datetime.timedelta(days=1)
             while next_open.weekday() >= 5:
