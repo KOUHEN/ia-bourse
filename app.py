@@ -296,8 +296,8 @@ if data is not None and not data.empty:
     else:
         currency = "$"
 
-    # 2. Statut du marché et compte à rebours (sans pytz)
- try:
+   # 2. Statut du marché et compte à rebours (sans pytz)
+try:
     now_utc = datetime.now(timezone.utc)
     # Sélection des horaires selon le marché
     if ticker_input.endswith(".DE") or ticker_input.endswith(".PA"):
