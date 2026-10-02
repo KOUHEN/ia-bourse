@@ -8,7 +8,7 @@ import stripe
 import yfinance as yf
 import datetime
 import pytz
-import sqLite3
+import sqlite3
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
 # ==========================================
