@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 import stripe
 import yfinance as yf
-import datetime
+from datetime import datetime
 import pytz
 import sqlite3
 # ==========================================
