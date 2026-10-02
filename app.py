@@ -6,8 +6,21 @@ import pandas as pd
 import streamlit as st
 import stripe
 import yfinance as yf
-import datetime as dt
-from datetime import datetime, timezoneimport pytz
+def add_favorite(ticker):
+    conn = sqlite3.connect("portfolio.db")
+    cursor = conn.cursor()
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    try:
+        cursor.execute(
+            "INSERT INTO watchlist (ticker, added_date) VALUES (?, ?)",
+            (ticker.upper(), today_str)
+        )
+        conn.commit()
+        st.toast(f"⭐ {ticker.upper()} ajouté aux favoris !", icon="⭐")
+    except sqlite3.IntegrityError:
+        st.toast(f"⚠️ {ticker.upper()} est déjà dans vos favoris.", icon="⚠️")
+    finally:
+        conn.close()from datetime import datetime, timezoneimport pytz
 import sqlite3
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
