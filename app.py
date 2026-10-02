@@ -6,8 +6,8 @@ import pandas as pd
 import streamlit as st
 import stripe
 import yfinance as yf
-from datetime import datetime
-import pytz
+import datetime as dt
+from datetime import datetime, timezoneimport pytz
 import sqlite3
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
