@@ -316,7 +316,7 @@ if data is not None and not data.empty:
     col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}")
 
     # Graphique
-   # Titre du graphique + Bouton Favori alignés
+  # Titre du graphique + Bouton Favori alignés
 col_title, col_fav_btn = st.columns([3, 1])
 
 with col_title:
@@ -326,11 +326,8 @@ with col_fav_btn:
     if st.button("⭐ Favori", key="btn_add_fav", use_container_width=True):
         add_favorite(ticker_input)
 
-# Ton graphique reste juste en dessous
+# Remets cette ligne TOUT À GAUCHE (sans aucun espace au début) :
 st.line_chart(data[["Close", "MA50", "MA200"]])
-    st.line_chart(data[["Close", "MA50", "MA200"]])
-
-    capital = st.number_input("💰 Votre capital / budget à investir ($) :", min_value=10, value=1000, step=50)
 
    # Module de recommandation IA
 st.subheader("🤖 Recommandation de l'Algorithme IA")
