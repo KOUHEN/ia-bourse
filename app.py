@@ -350,7 +350,7 @@ with col_rec3:
     ratio_fraction = capital / premium_price_est
     st.warning(f"**Fraction d'action**\n\n- Suggéré : **{premium_alt_name}**\n- Avec votre budget, vous obtenez **{ratio_fraction:.3f}** action.\n- Idéal pour investir sur de grands titres.")
 
-        if "ACHETER" in signal:
+if "ACHETER" in signal:
             score = "8.8/10"
             alt = "Titre solide (Aucune alternative requise)"
             if nb_actions > 0:
