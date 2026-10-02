@@ -6,10 +6,31 @@ import pandas as pd
 import streamlit as st
 import stripe
 import yfinance as yf
+import pytz
+import sqlite3
+import datetime
+from datetime import datetime, timezone
+
+# ==========================================
+# 1. INITIALISATION BDD & FONCTIONS FAVORIS
+# ==========================================
+def init_db():
+    conn = sqlite3.connect("portfolio.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS watchlist (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT UNIQUE NOT NULL,
+            added_date TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 def add_favorite(ticker):
     conn = sqlite3.connect("portfolio.db")
     cursor = conn.cursor()
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    today_str = datetime.now().strftime("%Y-%m-%d")
     try:
         cursor.execute(
             "INSERT INTO watchlist (ticker, added_date) VALUES (?, ?)",
@@ -20,8 +41,9 @@ def add_favorite(ticker):
     except sqlite3.IntegrityError:
         st.toast(f"⚠️ {ticker.upper()} est déjà dans vos favoris.", icon="⚠️")
     finally:
-        conn.close()from datetime import datetime, timezoneimport pytz
-import sqlite3
+        conn.close()
+
+init_db()
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
 # ==========================================
