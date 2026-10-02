@@ -323,8 +323,8 @@ elif currency == "DH":
     premium_price_est = 300.0
 else:
     cheap_alt_name = "Apple (AAPL)"
-    premium_alt_name = "Nvidia (NVDA)"
-    premium_price_est = 130.0
+premium_alt_name = "Nvidia (NVDA)"
+premium_price_est = 130.0
 
 col_rec1, col_rec2, col_rec3 = st.columns(3)
 
@@ -337,61 +337,51 @@ with col_rec1:
         st.success(f"**Achat direct**\n\n- **{nb_actions_entieres}** action(s) de **{ticker_input.upper()}**\n- Coût : **{cout_total:.2f} {currency}**\n- Reste : **{reste:.2f} {currency}**")
     else:
         fraction = capital / last_price if last_price > 0 else 0
-        st.info(f"**Achat fractionné**\n\nLe prix ({last_price:.2f} {currency}) dépasse votre budget.\n- Vous pouvez acheter **{fraction:.2f}** action de {ticker_input.upper()}.")
+        st.info(f"**Achat fractionné**\n\nLe prix ({last_price:.2f} {currency}) dépasse votre budget.\n- Vous pouvez acheter **{fraction:.2f}** action de {ticker_input.upper()}")
 
 # Option 2 : Alternative dans le budget
 with col_rec2:
     st.markdown("### 2. Option Diversification")
     st.success(f"**Achat direct**\n\n- Suggéré : **{cheap_alt_name}**\n- Accessible avec votre capital de **{capital:.0f} {currency}**.")
 
-# Option 3 : Achat fractionné
+# Option 3 : Achat Fractionné
 with col_rec3:
     st.markdown("### 3. Achat Fractionné")
     ratio_fraction = capital / premium_price_est
-    st.warning(f"**Fraction d'action**\n\n- Suggéré : **{premium_alt_name}**\n- Avec votre budget, vous obtenez **{ratio_fraction:.3f}** action.\n- Idéal pour investir sur de grands titres.")
+    st.warning(f"**Fraction d'action**\n\n- Suggéré : **{premium_alt_name}**\n- Avec votre budget, vous obtenez **{ratio_fraction:.3f}** action.\n- Idéal pour investir progressivement.")
 
+# Module Arbitrage IA
 if "ACHETER" in signal:
-            score = "8.8/10"
-            alt = "Titre solide (Aucune alternative requise)"
-            if nb_actions > 0:
-                conseil = f"Acheter environ {nb_actions} action(s) de {ticker_input.upper()} avec vos {capital}$."
-            else:
-                conseil = f"Votre budget ({capital}$) est inférieur au prix d'une action ({last_price:.2f}$). Utilisez les fractions d'actions."
-
-        elif "VENDRE" in signal:
-            score = "3.5/10"
-            alt = "NVDA" if ticker_input.upper() != "NVDA" else "MSFT"
-            montant_arbitrage = round(capital * 0.5, 2)
-            conseil = f"Alléger la position et réallouer {montant_arbitrage}$ vers {alt}."
-
-        else:
-            score = "5.5/10"
-            alt = "SPY (Indice S&P 500)"
-            conseil = f"Garder vos {capital}$ en liquidités en attente d'un signal plus clair."
-
-        st.json({
-            "Action analysée": ticker_input.upper(),
-            "Score de croissance IA": score,
-            "Alternative suggérée (Plus fort momentum)": alt,
-            "Conseil d'arbitrage": conseil
-        })
+    score = "8.8/10"
+    alt = "Titre solide (Aucune alternative requise)"
+    if nb_actions_entieres > 0:
+        conseil = f"Acheter environ {nb_actions_entieres} action(s) de {ticker_input.upper()} avec vos {capital}$."
     else:
-        st.warning(
-            "🔒 **Module Réservé aux Membres PRO :** Débloquez la fonctionnalité"
-            " d'arbitrage automatique pour savoir exactement quand vendre une"
-            " action et sur quelle compagnie réinvestir votre capital."
-        )
+        conseil = f"Votre budget ({capital}$) est inférieur au prix d'une action ({last_price:.2f}$). Utilisez les fractions d'actions."
+
+elif "VENDRE" in signal:
+    score = "3.5/10"
+    alt = "NVDA" if ticker_input.upper() != "NVDA" else "MSFT"
+    montant_arbitrage = round(capital * 0.5, 2)
+    conseil = f"Alléger la position et réallouer {montant_arbitrage}$ vers {alt}."
 
 else:
-    st.error(
-        f"Impossible de récupérer les données pour le symbole '{ticker_input}'. Vérifiez le ticker."
-    )
+    score = "5.5/10"
+    alt = "SPY (Indice S&P 500)"
+    conseil = f"Garder vos {capital}$ en liquidités en attente d'un signal plus clair."
+
+st.json({
+    "Action analysée": ticker_input.upper(),
+    "Score de croissance IA": score,
+    "Alternative suggérée (Plus fort momentum)": alt,
+    "Conseil d'arbitrage": conseil
+})
+
 # Avertissement Légal / Disclaimer
 st.markdown("---")
 st.caption(
     "⚠️ **Avertissement de responsabilité** : L'IA Kouhen FinTech et les signaux d'analyse fournis "
     "sur cette application sont transmis à titre purement informatif et éducatif. "
     "Ils n'incitent ni à acheter ni à vendre des instruments financiers. "
-    "Les investissements sur les marchés comportent des risques de perte en capital. "
-    "Consultez un professionnel de la finance agréé avant toute décision d'investissement."
+    "Les investissements sur les marchés comportent des risques de perte en capital."
 )
