@@ -8,7 +8,41 @@ import stripe
 import yfinance as yf
 import datetime
 import pytz
+import sqLite3
+# ==========================================
+# 1. INITIALISATION BDD & FONCTIONS FAVORIS
+# ==========================================
+def init_db():
+    conn = sqlite3.connect("portfolio.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS watchlist (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT UNIQUE NOT NULL,
+            added_date TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
+def add_favorite(ticker):
+    conn = sqlite3.connect("portfolio.db")
+    cursor = conn.cursor()
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    try:
+        cursor.execute(
+            "INSERT INTO watchlist (ticker, added_date) VALUES (?, ?)",
+            (ticker.upper(), today_str)
+        )
+        conn.commit()
+        st.toast(f"⭐ {ticker.upper()} ajouté aux favoris !", icon="⭐")
+    except sqlite3.IntegrityError:
+        st.toast(f"⚠️ {ticker.upper()} est déjà dans vos favoris.", icon="⚠️")
+    finally:
+        conn.close()
+
+# On initialise la table SQLite dès le chargement de la page
+init_db()
 # ==========================================
 # 1. CONFIGURATION STRIPE & SECRETS
 # ==========================================
@@ -282,7 +316,18 @@ if data is not None and not data.empty:
     col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}")
 
     # Graphique
+   # Titre du graphique + Bouton Favori alignés
+col_title, col_fav_btn = st.columns([3, 1])
+
+with col_title:
     st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
+
+with col_fav_btn:
+    if st.button("⭐ Favori", key="btn_add_fav", use_container_width=True):
+        add_favorite(ticker_input)
+
+# Ton graphique reste juste en dessous
+st.line_chart(data[["Close", "MA50", "MA200"]])
     st.line_chart(data[["Close", "MA50", "MA200"]])
 
     capital = st.number_input("💰 Votre capital / budget à investir ($) :", min_value=10, value=1000, step=50)
