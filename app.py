@@ -352,6 +352,7 @@ st.markdown("---")
 st.subheader("💡 Suggestions d'allocation intelligente")
 
 # Calcul du nombre d'actions entières possibles pour l'action analysée
+capital = st.number_input("Capital à investir ($)", min_value=10.0, value=1000.0, step=50.0, key="capital_input")
 nb_actions_entieres = int(capital // last_price) if last_price > 0 else 0
 
 # Liste de tickers de référence selon la devise
