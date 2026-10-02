@@ -8,8 +8,8 @@ import stripe
 import yfinance as yf
 import pytz
 import sqlite3
-import datetime
-from datetime import datetime, timezone
+import datetime as dt
+from datetime import datetime
 
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
