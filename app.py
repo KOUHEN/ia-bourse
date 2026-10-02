@@ -297,6 +297,7 @@ if data is not None and not data.empty:
         currency = "$"
 
    # 2. Statut du marché et compte à rebours (sans pytz)
+# 2. Statut du marché et compte à rebours (sans pytz)
 try:
     now_utc = datetime.now(timezone.utc)
     # Sélection des horaires selon le marché
@@ -318,7 +319,7 @@ try:
 
     is_open = (not is_weekend) and (open_time <= now_utc <= close_time)
 
-if is_open:
+    if is_open:
         st.success(f"🟢 **Marché Ouvert** ({tz_label})")
     else:
         next_open = open_time
@@ -327,10 +328,10 @@ if is_open:
         while next_open.weekday() >= 5:
             next_open += timedelta(days=1)
         
-            diff = next_open - now_utc
-            hours, remainder = divmod(diff.seconds, 3600)
-            minutes, _ = divmod(remainder, 60)
-            st.warning(f"🔴 **Marché Fermé** | Ouvre dans {diff.days * 24 + hours}h {minutes}min")
+        diff = next_open - now_utc
+        hours, remainder = divmod(diff.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        st.warning(f"🔴 **Marché Fermé** | Ouvre dans {diff.days * 24 + hours}h {minutes}min")
 except Exception as e:
     st.info(f"Erreur marché : {e}")
     # 3. Récupération du prix en direct
