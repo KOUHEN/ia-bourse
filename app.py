@@ -318,23 +318,21 @@ try:
 
     is_open = (not is_weekend) and (open_time <= now_utc <= close_time)
 
-    if is_open:
+if is_open:
         st.success(f"🟢 **Marché Ouvert** ({tz_label})")
     else:
         next_open = open_time
-            if now_utc > close_time:
-                next_open += datetime.timedelta(days=1)
-            while next_open.weekday() >= 5:
-                next_open += datetime.timedelta(days=1)
-                
-            time_left = next_open - now_utc
-            hours, remainder = divmod(int(time_left.total_seconds()), 3600)
+        if now_utc > close_time:
+            next_open += timedelta(days=1)
+        while next_open.weekday() >= 5:
+            next_open += timedelta(days=1)
+        
+            diff = next_open - now_utc
+            hours, remainder = divmod(diff.seconds, 3600)
             minutes, _ = divmod(remainder, 60)
-            
-            st.warning(f"🔴 **Marché Fermé** | Réouverture dans environ **{hours}h {minutes}min**")
-    except Exception as e:
-        st.error(f"Erreur marché : {e}")
-
+            st.warning(f"🔴 **Marché Fermé** | Ouvre dans {diff.days * 24 + hours}h {minutes}min")
+except Exception as e:
+    st.info(f"Erreur marché : {e}")
     # 3. Récupération du prix en direct
     try:
         last_price = float(ticker.fast_info['lastPrice'])
