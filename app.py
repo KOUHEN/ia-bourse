@@ -333,46 +333,70 @@ try:
         st.warning(f"🔴 **Marché Fermé** | Ouvre dans {diff.days * 24 + hours}h {minutes}min")
 except Exception as e:
     st.info(f"Erreur marché : {e}")
-    # 3. Récupération du prix en direct
+# 3. Récupération du prix en direct
+    last_price, last_ma50, last_ma200 = None, None, None
+
     try:
         last_price = float(ticker.fast_info['lastPrice'])
     except:
-        last_price = float(data["Close"].dropna().iloc[-1])
-    last_ma50 = float(data["MA50"].dropna().iloc[-1])
-    last_ma200 = float(data["MA200"].dropna().iloc[-1])
+        try:
+            last_price = float(data["Close"].dropna().iloc[-1])
+        except:
+            last_price = None
+
+    try:
+        last_ma50 = float(data["MA50"].dropna().iloc[-1])
+        last_ma200 = float(data["MA200"].dropna().iloc[-1])
+    except:
+        last_ma50, last_ma200 = None, None
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Prix Actuel", f"{last_price:.2f} {currency}")
-    col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} {currency}")
-    col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}")
+    if last_price is not None:
+        col1.metric("Prix Actuel", f"{last_price:.2f} {currency}")
+    else:
+        col1.metric("Prix Actuel", "N/A")
+
+    if last_ma50 is not None:
+        col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} {currency}")
+    else:
+        col2.metric("Moyenne Mobile 50j", "N/A")
+
+    if last_ma200 is not None:
+        col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}")
+    else:
+        col3.metric("Moyenne Mobile 200j", "N/A")
 
     # Graphique
-  # Titre du graphique + Bouton Favori alignés
-col_title, col_fav_btn = st.columns([3, 1])
+    # Titre du graphique + Bouton Favori alignés
+    col_title, col_fav_btn = st.columns([3, 1])
 
-with col_title:
-    st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
+    with col_title:
+        st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
 
-with col_fav_btn:
-    if st.button("⭐ Favori", key="btn_add_fav", use_container_width=True):
-        add_favorite(ticker_input)
+    with col_fav_btn:
+        if st.button("⭐ Favori", key="btn_add_fav", use_container_width=True):
+            add_favorite(ticker_input)
 
-# Remets cette ligne TOUT À GAUCHE (sans aucun espace au début) :
-st.line_chart(data[["Close", "MA50", "MA200"]])
+    st.line_chart(data[["Close", "MA50", "MA200"]])
 
-   # Module de recommandation IA
-st.subheader("🤖 Recommandation de l'Algorithme IA")
+    # Module de recommandation IA
+    st.subheader("🤖 Recommandation de l'Algorithme IA")
 
-# 1. Analyse technique du ticker sélectionné
-if last_price > last_ma50 and last_ma50 > last_ma200:
-    signal = "🟢 ACHETER / CONSERVER"
-    explanation = f"Tendances très positives pour {ticker_input.upper()} : le prix ({last_price:.2f} {currency}) est au-dessus des moyennes mobiles à 50 et 200 jours (signal haussier puissant)."
-elif last_price < last_ma50 and last_ma50 < last_ma200:
-    signal = "🔴 VENDRE / ALLÉGER"
-    explanation = f"Tendances baissières pour {ticker_input.upper()} : le prix actuel est en dessous de ses moyennes mobiles 50j et 200j."
-else:
-    signal = "🟠 NEUTRE / CONSOLIDATION"
-    explanation = f"Signal mitigé pour {ticker_input.upper()} : le cours évolue entre ses moyennes mobiles à 50 et 200 jours."
+    if last_price is not None and last_ma50 is not None and last_ma200 is not None:
+        if last_price > last_ma50 and last_ma50 > last_ma200:
+            signal = "🟢 ACHETER / CONSERVER"
+            explanation = f"Tendances très positives pour {ticker_input.upper()} : le prix ({last_price:.2f} {currency}) est au-dessus des moyennes mobiles à 50 et 200 jours (signal haussier puissant)."
+            st.success(f"**{signal}**\n\n{explanation}")
+        elif last_price < last_ma50 and last_ma50 < last_ma200:
+            signal = "🔴 VENDRE / ALLÉGER"
+            explanation = f"Tendances baissières pour {ticker_input.upper()} : le prix actuel est en dessous de ses moyennes mobiles 50j et 200j."
+            st.error(f"**{signal}**\n\n{explanation}")
+        else:
+            signal = "🟠 NEUTRE / CONSOLIDATION"
+            explanation = f"Signal mitigé pour {ticker_input.upper()} : le cours évolue entre ses moyennes mobiles à 50 et 200 jours."
+            st.warning(f"**{signal}**\n\n{explanation}")
+    else:
+        st.info("⚠️ Données insuffisantes pour calculer la recommandation complète.")
 
 st.markdown(f"**Signal pour {ticker_input.upper()} :** {signal}")
 st.caption(explanation)
