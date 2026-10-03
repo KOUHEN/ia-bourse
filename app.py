@@ -8,6 +8,7 @@ import stripe
 import yfinance as yf
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from google import genai
 
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
@@ -44,12 +45,16 @@ def add_favorite(ticker):
 init_db()
 
 # ==========================================
-# 2. CONFIGURATION STRIPE & SECRETS
+# 2. CONFIGURATION STRIPE & GEMINI SECRETS
 # ==========================================
 raw_key = str(st.secrets.get("STRIPE_SECRET_KEY", ""))
 clean_key = raw_key.strip().replace("\n", "").replace("\r", "").replace(" ", "")
 stripe.api_key = clean_key
 APP_URL = st.secrets.get("APP_URL", "http://localhost:8501")
+
+# Initialisation du client Gemini API
+gemini_key = st.secrets.get("GEMINI_API_KEY", "")
+client = genai.Client(api_key=gemini_key) if gemini_key else None
 
 # ==========================================
 # 3. GESTION DE LA BASE DE DONNÉES (JSON)
@@ -81,7 +86,7 @@ def create_stripe_checkout_session(user_email):
                     "currency": "usd",
                     "product_data": {
                         "name": "Abonnement IA Bourse Pro",
-                        "description": "Accès illimité aux analyses IA, signaux d'arbitrage et alertes.",
+                        "description": "Accès illimité aux analyses IA, signaux d'arbitrage et assistant personnel.",
                     },
                     "unit_amount": 999,
                     "recurring": {"interval": "month"},
@@ -191,7 +196,7 @@ if not user_is_pro:
 st.markdown("---")
 
 if user_is_pro:
-    ticker_input = st.text_input("🔍 Entrez le symbole d'une action (ex: NVDA, TSLA, MC.PA, MSFT) :", "NVDA")
+    ticker_input = st.text_input("🔍 Entrez le symbole d'une action (ex: NVDA, TSLA, MC.PA, MSFT, LLY, AMZN) :", "NVDA")
 else:
     ticker_input = "AAPL"
     st.write("📌 **Action en démonstration (Gratuit) :** AAPL (Apple Inc.)")
@@ -207,7 +212,7 @@ def fetch_stock_data(symbol):
 data = fetch_stock_data(ticker_input)
 ticker = yf.Ticker(ticker_input)
 
-# Initialisation des variables par défaut
+# Variables de stock
 signal = "N/A"
 explanation = "Données insuffisantes pour analyser ce titre."
 last_price, last_ma50, last_ma200 = None, None, None
@@ -260,7 +265,6 @@ if data is not None and not data.empty:
     data["MA50"] = data["Close"].rolling(window=50).mean()
     data["MA200"] = data["Close"].rolling(window=200).mean()
 
-    # Récupération du prix
     try:
         last_price = float(ticker.fast_info['lastPrice'])
     except:
@@ -280,7 +284,6 @@ if data is not None and not data.empty:
     col2.metric("Moyenne Mobile 50j", f"{last_ma50:.2f} {currency}" if last_ma50 else "N/A")
     col3.metric("Moyenne Mobile 200j", f"{last_ma200:.2f} {currency}" if last_ma200 else "N/A")
 
-    # Graphique & Favoris
     col_title, col_fav_btn = st.columns([3, 1])
     with col_title:
         st.subheader(f"Évolution et Indicateurs : {ticker_input.upper()}")
@@ -290,21 +293,20 @@ if data is not None and not data.empty:
 
     st.line_chart(data[["Close", "MA50", "MA200"]])
 
-    # Recommandation IA
     st.subheader("🤖 Recommandation de l'Algorithme IA")
 
     if last_price and last_ma50 and last_ma200:
         if last_price > last_ma50 and last_ma50 > last_ma200:
             signal = "🟢 ACHETER / CONSERVER"
-            explanation = f"Tendances très positives pour {ticker_input.upper()} : le prix ({last_price:.2f} {currency}) est au-dessus des moyennes mobiles 50j et 200j."
+            explanation = f"Tendances très positives pour {ticker_input.upper()} : le prix ({last_price:.2f} {currency}) est supérieur aux MM50 et MM200."
             st.success(f"**{signal}**\n\n{explanation}")
         elif last_price < last_ma50 and last_ma50 < last_ma200:
             signal = "🔴 VENDRE / ALLÉGER"
-            explanation = f"Tendances baissières pour {ticker_input.upper()} : le prix actuel est sous ses moyennes mobiles 50j et 200j."
+            explanation = f"Tendances baissières pour {ticker_input.upper()} : le cours est sous ses moyennes mobiles principales."
             st.error(f"**{signal}**\n\n{explanation}")
         else:
             signal = "🟠 NEUTRE / CONSOLIDATION"
-            explanation = f"Signal mitigé pour {ticker_input.upper()} : le cours évolue entre ses moyennes mobiles."
+            explanation = f"Signal mitigé pour {ticker_input.upper()} : phase d'attente ou de consolidation."
             st.warning(f"**{signal}**\n\n{explanation}")
     else:
         st.info(f"⚠️ {explanation}")
@@ -314,70 +316,59 @@ st.caption(explanation)
 
 st.markdown("---")
 
-# Allocation intelligente
-st.subheader("💡 Suggestions d'allocation intelligente")
+# ==========================================
+# 8. MODULE CHATBOT IA & CONSEILS SUR-MESURE
+# ==========================================
+st.subheader("💬 Assistant IA Financial Advisor")
+st.write("Demandez à l'IA des idées d'actions à forte croissance, des analyses de secteurs ou des stratégies de gestion de risque.")
 
-capital = st.number_input("Capital à investir ($)", min_value=10.0, value=1000.0, step=50.0, key="capital_input")
-nb_actions_entieres = int(capital // last_price) if (last_price and last_price > 0) else 0
-
-if currency == "€":
-    cheap_alt_name = "Airbus (AIR.PA)"
-    premium_alt_name = "ASML (ASML.AS)"
-    premium_price_est = 750.0
-elif currency == "DH":
-    cheap_alt_name = "Attijariwafa Bank"
-    premium_alt_name = "BCP"
-    premium_price_est = 300.0
+if not client:
+    st.warning("⚠️ Clé API Gemini manquante. Veuillez ajouter `GEMINI_API_KEY` dans vos secrets Streamlit.")
 else:
-    cheap_alt_name = "Apple (AAPL)"
-    premium_alt_name = "Nvidia (NVDA)"
-    premium_price_est = 130.0
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": f"Bonjour ! Je suis votre conseiller financier IA. Je peux vous proposer des actions à forte croissance adaptées à votre budget, analyser **{ticker_input.upper()}** ou diversifier votre portefeuille. Que souhaitez-vous savoir ?"
+            }
+        ]
 
-col_rec1, col_rec2, col_rec3 = st.columns(3)
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-with col_rec1:
-    st.markdown("### 1. Actif Sélectionné")
-    if last_price:
-        if nb_actions_entieres >= 1:
-            cout_total = nb_actions_entieres * last_price
-            reste = capital - cout_total
-            st.success(f"**Achat direct**\n\n- **{nb_actions_entieres}** action(s) de **{ticker_input.upper()}**\n- Coût : **{cout_total:.2f} {currency}**\n- Reste : **{reste:.2f} {currency}**")
-        else:
-            fraction = capital / last_price if last_price > 0 else 0
-            st.info(f"**Achat fractionné**\n\nLe prix ({last_price:.2f} {currency}) dépasse votre budget.\n- Vous pouvez acheter **{fraction:.2f}** action.")
-    else:
-        st.info("Données de prix non disponibles.")
+    if user_prompt := st.chat_input("Ex: Propose-moi 3 actions en pleine croissance en dehors des Big Tech..."):
+        st.session_state.messages.append({"role": "user", "content": user_prompt})
+        with st.chat_message("user"):
+            st.markdown(user_prompt)
 
-with col_rec2:
-    st.markdown("### 2. Option Diversification")
-    st.success(f"**Achat direct**\n\n- Suggéré : **{cheap_alt_name}**\n- Accessible avec votre capital de **{capital:.0f} {currency}**.")
+        system_instruction = f"""
+        Tu es un analyste financier expert, neutre et très pédagogique au sein de StockAdvisor IA.
+        Contexte de l'utilisateur :
+        - Statut : {'Membre PRO' if user_is_pro else 'Compte Gratuit'}
+        - Action sélectionnée à l'écran : {ticker_input.upper()}
+        - Prix de l'action : {last_price if last_price else 'Inconnu'} {currency}
+        - Tendance actuelle : {signal}
 
-with col_rec3:
-    st.markdown("### 3. Achat Fractionné")
-    ratio_fraction = capital / premium_price_est
-    st.warning(f"**Fraction d'action**\n\n- Suggéré : **{premium_alt_name}**\n- Avec votre budget, vous obtenez **{ratio_fraction:.3f}** action.")
+        RÈGLES IMPORTANTES :
+        1. Ne limite PAS tes recommandations à NVDA, AAPL ou MSFT. Explore divers secteurs (santé comme Eli Lilly/Novo Nordisk, semi-conducteurs, énergie verte, cybersécurité, fintech, et ETFs comme QQQ/SPY).
+        2. Propose toujours des explications concrètes : pourquoi l'entreprise est en croissance (catalyseurs, résultats financiers, secteur porteur).
+        3. Rappelle brièvement la gestion des risques (diversification, horizon de temps).
+        4. Sois structuré avec des puces et un ton professionnel mais accessible.
+        """
 
-# Module Arbitrage
-if "ACHETER" in signal:
-    score = "8.8/10"
-    alt = "Titre solide (Aucune alternative requise)"
-    conseil = f"Acheter environ {nb_actions_entieres} action(s) de {ticker_input.upper()}." if nb_actions_entieres > 0 else f"Utilisez les fractions d'actions pour {ticker_input.upper()}."
-elif "VENDRE" in signal:
-    score = "3.5/10"
-    alt = "NVDA" if ticker_input.upper() != "NVDA" else "MSFT"
-    montant_arbitrage = round(capital * 0.5, 2)
-    conseil = f"Alléger la position et réallouer {montant_arbitrage}$ vers {alt}."
-else:
-    score = "5.5/10"
-    alt = "SPY (Indice S&P 500)"
-    conseil = f"Garder vos {capital}$ en liquidités en attente d'un signal plus clair."
+        full_prompt = f"{system_instruction}\n\nQuestion de l'utilisateur : {user_prompt}"
 
-st.json({
-    "Action analysée": ticker_input.upper(),
-    "Score de croissance IA": score,
-    "Alternative suggérée": alt,
-    "Conseil d'arbitrage": conseil
-})
+        with st.chat_message("assistant"):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=full_prompt
+                )
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+            except Exception as e:
+                st.error(f"Erreur lors de la génération : {e}")
 
 st.markdown("---")
 st.caption(
