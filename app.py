@@ -1,14 +1,14 @@
 import hashlib
 import json
 import os
+import sqlite3
 import urllib.parse
+from datetime import datetime, timedelta, timezone
+import ollama
 import pandas as pd
 import streamlit as st
 import stripe
 import yfinance as yf
-import sqlite3
-from datetime import datetime, timedelta, timezone
-from google import genai
 
 # ==========================================
 # 1. INITIALISATION BDD & FONCTIONS FAVORIS
@@ -45,16 +45,12 @@ def add_favorite(ticker):
 init_db()
 
 # ==========================================
-# 2. CONFIGURATION STRIPE & GEMINI SECRETS
+# 2. CONFIGURATION STRIPE SECRETS
 # ==========================================
 raw_key = str(st.secrets.get("STRIPE_SECRET_KEY", ""))
 clean_key = raw_key.strip().replace("\n", "").replace("\r", "").replace(" ", "")
 stripe.api_key = clean_key
 APP_URL = st.secrets.get("APP_URL", "http://localhost:8501")
-
-# Initialisation du client Gemini API
-gemini_key = st.secrets.get("GEMINI_API_KEY", "")
-client = genai.Client(api_key=gemini_key) if gemini_key else None
 
 # ==========================================
 # 3. GESTION DE LA BASE DE DONNÉES (JSON)
@@ -317,60 +313,62 @@ st.caption(explanation)
 st.markdown("---")
 
 # ==========================================
-# 8. MODULE CHATBOT IA & CONSEILS SUR-MESURE (RÉSERVÉ AUX MEMBRES PRO)
+# 8. MODULE CHATBOT IA & CONSEILS SUR-MESURE (OLLAMA - LLAMA 3.2)
 # ==========================================
-st.subheader("💬 Assistant IA Financial Advisor")
+st.subheader("💬 Assistant IA Financial Advisor (Llama 3.2)")
 
 if user_is_pro:
     st.write("Demandez à l'IA des idées d'actions à forte croissance, des analyses de secteurs ou des stratégies de gestion de risque.")
 
-    if not client:
-        st.warning("⚠️ Clé API Gemini manquante. Veuillez ajouter `GEMINI_API_KEY` dans vos secrets Streamlit.")
-    else:
-        if "messages" not in st.session_state:
-            st.session_state.messages = [
-                {
-                    "role": "assistant",
-                    "content": f"Bonjour ! Je suis votre conseiller financier IA. Je peux vous proposer des actions à forte croissance adaptées à votre budget, analyser **{ticker_input.upper()}** ou diversifier votre portefeuille. Que souhaitez-vous savoir ?"
-                }
-            ]
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": f"Bonjour ! Je suis votre conseiller financier IA propulsé par Llama 3.2. Je peux vous proposer des actions à forte croissance adaptées à votre budget, analyser **{ticker_input.upper()}** ou diversifier votre portefeuille. Que souhaitez-vous savoir ?"
+            }
+        ]
 
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-        if user_prompt := st.chat_input("Ex: Propose-moi 3 actions en pleine croissance en dehors des Big Tech..."):
-            st.session_state.messages.append({"role": "user", "content": user_prompt})
-            with st.chat_message("user"):
-                st.markdown(user_prompt)
+    if user_prompt := st.chat_input("Ex: Propose-moi 3 actions en pleine croissance en dehors des Big Tech..."):
+        st.session_state.messages.append({"role": "user", "content": user_prompt})
+        with st.chat_message("user"):
+            st.markdown(user_prompt)
 
-            system_instruction = f"""
-            Tu es un analyste financier expert, neutre et très pédagogique au sein de StockAdvisor IA.
-            Contexte de l'utilisateur :
-            - Statut : Membre PRO
-            - Action sélectionnée à l'écran : {ticker_input.upper()}
-            - Prix de l'action : {last_price if last_price else 'Inconnu'} {currency}
-            - Tendance actuelle : {signal}
+        system_instruction = f"""
+        Tu es un analyste financier expert, neutre et très pédagogique au sein de StockAdvisor IA.
+        Contexte de l'utilisateur :
+        - Statut : Membre PRO
+        - Action sélectionnée à l'écran : {ticker_input.upper()}
+        - Prix de l'action : {last_price if last_price else 'Inconnu'} {currency}
+        - Tendance actuelle : {signal}
 
-            RÈGLES IMPORTANTES :
-            1. Ne limite PAS tes recommandations à NVDA, AAPL ou MSFT. Explore divers secteurs (santé comme Eli Lilly/Novo Nordisk, semi-conducteurs, énergie verte, cybersécurité, fintech, et ETFs comme QQQ/SPY).
-            2. Propose toujours des explications concrètes : pourquoi l'entreprise est en croissance (catalyseurs, résultats financiers, secteur porteur).
-            3. Rappelle brièvement la gestion des risques (diversification, horizon de temps).
-            4. Sois structuré avec des puces et un ton professionnel mais accessible.
-            """
+        RÈGLES IMPORTANTES :
+        1. Réponds toujours en français.
+        2. Ne limite PAS tes recommandations à NVDA, AAPL ou MSFT. Explore divers secteurs (santé comme Eli Lilly/Novo Nordisk, semi-conducteurs, énergie verte, cybersécurité, fintech, et ETFs comme QQQ/SPY).
+        3. Propose toujours des explications concrètes : pourquoi l'entreprise est en croissance (catalyseurs, résultats financiers, secteur porteur).
+        4. Rappelle brièvement la gestion des risques (diversification, horizon de temps).
+        5. Sois structuré avec des puces et un ton professionnel mais accessible.
+        """
 
-            full_prompt = f"{system_instruction}\n\nQuestion de l'utilisateur : {user_prompt}"
+        full_prompt = f"{system_instruction}\n\nQuestion de l'utilisateur : {user_prompt}"
 
-            with st.chat_message("assistant"):
+        with st.chat_message("assistant"):
+            with st.spinner("Analyse locale via Llama 3.2..."):
                 try:
-                    response = client.models.generate_content(
-                        model="gemini-3.8-flash",
-                        contents=full_prompt
+                    response = ollama.chat(
+                        model="llama3.2",
+                        messages=[
+                            {"role": "user", "content": full_prompt}
+                        ]
                     )
-                    st.markdown(response.text)
-                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                    reply_text = response['message']['content']
+                    st.markdown(reply_text)
+                    st.session_state.messages.append({"role": "assistant", "content": reply_text})
                 except Exception as e:
-                    st.error(f"Erreur lors de la génération : {e}")
+                    st.error(f"Erreur lors de la génération avec Ollama : {e}")
 else:
     st.info("🔒 **Fonctionnalité réservée aux membres PRO**")
     st.write("L'assistant IA conversationnel permet de poser des questions personnalisées, d'obtenir des idées d'actions à fort potentiel et des analyses de portefeuilles.")
@@ -384,6 +382,6 @@ else:
 
 st.markdown("---")
 st.caption(
-    "⚠️️ **Avertissement de responsabilité** : L'IA Kouhen FinTech et les signaux d'analyse fournis "
+    "⚠ **Avertissement de responsabilité** : L'IA Kouhen FinTech et les signaux d'analyse fournis "
     "sur cette application sont transmis à titre purement informatif et éducatif."
 )
