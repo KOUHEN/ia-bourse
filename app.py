@@ -183,7 +183,7 @@ st.title("🤖 IA Conseiller & Suivi Boursier")
 if not user_is_pro:
     st.info(
         "💡 **Version Gratuite :** Analyse restreinte à l'action d'exemple (AAPL). "
-        "Passez à la **version PRO (9.99 $/mois)** pour suivre n'importe quelle entreprise."
+        "Passez à la **version PRO (9.99 $/mois)** pour suivre n'importe quelle entreprise et débloquer l'assistant IA."
     )
     if current_user:
         if st.button("🚀 Passer à la version PRO (9.99 $/mois) via Stripe"):
@@ -317,58 +317,70 @@ st.caption(explanation)
 st.markdown("---")
 
 # ==========================================
-# 8. MODULE CHATBOT IA & CONSEILS SUR-MESURE
+# 8. MODULE CHATBOT IA & CONSEILS SUR-MESURE (RÉSERVÉ AUX MEMBRES PRO)
 # ==========================================
 st.subheader("💬 Assistant IA Financial Advisor")
-st.write("Demandez à l'IA des idées d'actions à forte croissance, des analyses de secteurs ou des stratégies de gestion de risque.")
 
-if not client:
-    st.warning("⚠️ Clé API Gemini manquante. Veuillez ajouter `GEMINI_API_KEY` dans vos secrets Streamlit.")
+if user_is_pro:
+    st.write("Demandez à l'IA des idées d'actions à forte croissance, des analyses de secteurs ou des stratégies de gestion de risque.")
+
+    if not client:
+        st.warning("⚠️ Clé API Gemini manquante. Veuillez ajouter `GEMINI_API_KEY` dans vos secrets Streamlit.")
+    else:
+        if "messages" not in st.session_state:
+            st.session_state.messages = [
+                {
+                    "role": "assistant",
+                    "content": f"Bonjour ! Je suis votre conseiller financier IA. Je peux vous proposer des actions à forte croissance adaptées à votre budget, analyser **{ticker_input.upper()}** ou diversifier votre portefeuille. Que souhaitez-vous savoir ?"
+                }
+            ]
+
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        if user_prompt := st.chat_input("Ex: Propose-moi 3 actions en pleine croissance en dehors des Big Tech..."):
+            st.session_state.messages.append({"role": "user", "content": user_prompt})
+            with st.chat_message("user"):
+                st.markdown(user_prompt)
+
+            system_instruction = f"""
+            Tu es un analyste financier expert, neutre et très pédagogique au sein de StockAdvisor IA.
+            Contexte de l'utilisateur :
+            - Statut : Membre PRO
+            - Action sélectionnée à l'écran : {ticker_input.upper()}
+            - Prix de l'action : {last_price if last_price else 'Inconnu'} {currency}
+            - Tendance actuelle : {signal}
+
+            RÈGLES IMPORTANTES :
+            1. Ne limite PAS tes recommandations à NVDA, AAPL ou MSFT. Explore divers secteurs (santé comme Eli Lilly/Novo Nordisk, semi-conducteurs, énergie verte, cybersécurité, fintech, et ETFs comme QQQ/SPY).
+            2. Propose toujours des explications concrètes : pourquoi l'entreprise est en croissance (catalyseurs, résultats financiers, secteur porteur).
+            3. Rappelle brièvement la gestion des risques (diversification, horizon de temps).
+            4. Sois structuré avec des puces et un ton professionnel mais accessible.
+            """
+
+            full_prompt = f"{system_instruction}\n\nQuestion de l'utilisateur : {user_prompt}"
+
+            with st.chat_message("assistant"):
+                try:
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=full_prompt
+                    )
+                    st.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                except Exception as e:
+                    st.error(f"Erreur lors de la génération : {e}")
 else:
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": f"Bonjour ! Je suis votre conseiller financier IA. Je peux vous proposer des actions à forte croissance adaptées à votre budget, analyser **{ticker_input.upper()}** ou diversifier votre portefeuille. Que souhaitez-vous savoir ?"
-            }
-        ]
-
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    if user_prompt := st.chat_input("Ex: Propose-moi 3 actions en pleine croissance en dehors des Big Tech..."):
-        st.session_state.messages.append({"role": "user", "content": user_prompt})
-        with st.chat_message("user"):
-            st.markdown(user_prompt)
-
-        system_instruction = f"""
-        Tu es un analyste financier expert, neutre et très pédagogique au sein de StockAdvisor IA.
-        Contexte de l'utilisateur :
-        - Statut : {'Membre PRO' if user_is_pro else 'Compte Gratuit'}
-        - Action sélectionnée à l'écran : {ticker_input.upper()}
-        - Prix de l'action : {last_price if last_price else 'Inconnu'} {currency}
-        - Tendance actuelle : {signal}
-
-        RÈGLES IMPORTANTES :
-        1. Ne limite PAS tes recommandations à NVDA, AAPL ou MSFT. Explore divers secteurs (santé comme Eli Lilly/Novo Nordisk, semi-conducteurs, énergie verte, cybersécurité, fintech, et ETFs comme QQQ/SPY).
-        2. Propose toujours des explications concrètes : pourquoi l'entreprise est en croissance (catalyseurs, résultats financiers, secteur porteur).
-        3. Rappelle brièvement la gestion des risques (diversification, horizon de temps).
-        4. Sois structuré avec des puces et un ton professionnel mais accessible.
-        """
-
-        full_prompt = f"{system_instruction}\n\nQuestion de l'utilisateur : {user_prompt}"
-
-        with st.chat_message("assistant"):
-            try:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=full_prompt
-                )
-                st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-            except Exception as e:
-                st.error(f"Erreur lors de la génération : {e}")
+    st.info("🔒 **Fonctionnalité réservée aux membres PRO**")
+    st.write("L'assistant IA conversationnel permet de poser des questions personnalisées, d'obtenir des idées d'actions à fort potentiel et des analyses de portefeuilles.")
+    if current_user:
+        if st.button("🚀 Débloquer l'Assistant IA avec la version PRO (9.99 $/mois)"):
+            checkout_url = create_stripe_checkout_session(current_user)
+            if checkout_url:
+                st.markdown(f"[👉 Cliquez ici pour procéder au paiement Stripe]({checkout_url})")
+    else:
+        st.warning("Veuillez vous connecter pour vous abonner et accéder à l'Assistant IA.")
 
 st.markdown("---")
 st.caption(
