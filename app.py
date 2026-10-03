@@ -379,8 +379,11 @@ except Exception as e:
 
     st.line_chart(data[["Close", "MA50", "MA200"]])
 
-    # Module de recommandation IA
+# Module de recommandation IA
     st.subheader("🤖 Recommandation de l'Algorithme IA")
+
+    signal = "N/A"
+    explanation = "Données insuffisantes pour calculer la recommandation."
 
     if last_price is not None and last_ma50 is not None and last_ma200 is not None:
         if last_price > last_ma50 and last_ma50 > last_ma200:
@@ -396,7 +399,10 @@ except Exception as e:
             explanation = f"Signal mitigé pour {ticker_input.upper()} : le cours évolue entre ses moyennes mobiles à 50 et 200 jours."
             st.warning(f"**{signal}**\n\n{explanation}")
     else:
-        st.info("⚠️ Données insuffisantes pour calculer la recommandation complète.")
+        st.info(f"⚠️ {explanation}")
+
+    # Affichage de ton markdown ligne 401
+    st.markdown(f"**Signal pour {ticker_input.upper()} :** {signal}")
 
 st.markdown(f"**Signal pour {ticker_input.upper()} :** {signal}")
 st.caption(explanation)
