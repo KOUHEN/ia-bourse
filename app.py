@@ -361,16 +361,16 @@ if user_is_pro:
 
             full_prompt = f"{system_instruction}\n\nQuestion de l'utilisateur : {user_prompt}"
 
-with st.chat_message("assistant"):
-            try:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=full_prompt
-                )
-                st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-            except Exception as e:
-                st.error(f"Erreur lors de la génération : {e}")
+            with st.chat_message("assistant"):
+                try:
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=full_prompt
+                    )
+                    st.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                except Exception as e:
+                    st.error(f"Erreur lors de la génération : {e}")
 else:
     st.info("🔒 **Fonctionnalité réservée aux membres PRO**")
     st.write("L'assistant IA conversationnel permet de poser des questions personnalisées, d'obtenir des idées d'actions à fort potentiel et des analyses de portefeuilles.")
@@ -384,6 +384,6 @@ else:
 
 st.markdown("---")
 st.caption(
-    "⚠️ **Avertissement de responsabilité** : L'IA Kouhen FinTech et les signaux d'analyse fournis "
+    "⚠️️ **Avertissement de responsabilité** : L'IA Kouhen FinTech et les signaux d'analyse fournis "
     "sur cette application sont transmis à titre purement informatif et éducatif."
 )
