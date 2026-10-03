@@ -364,7 +364,7 @@ if user_is_pro:
             with st.chat_message("assistant"):
                 try:
                     response = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model="gemini-2.0-flash",
                         contents=full_prompt
                     )
                     st.markdown(response.text)
